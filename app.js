@@ -9,6 +9,12 @@
    - Banner actualización (SW)
    - WakeLock
 ========================== */
+if (typeof gtag === "function") {
+  gtag('event', 'open_app', {
+    installed: isStandalone() ? 'yes' : 'no'
+  });
+}
+
 
 // ====== CONFIG ======
 const TIEMPO_ESCRITURA = 70;
