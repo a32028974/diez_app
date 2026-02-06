@@ -1,4 +1,4 @@
-const VERSION = "2026-02-06-2"; // 👈 subí versión (cambiala cada vez que actualices)
+const VERSION = "2026-02-06-3"; // 👈 subí versión (cambiala cada vez que actualices)
 const CACHE_NAME = `diezde-${VERSION}`;
 
 const APP_SHELL = [
