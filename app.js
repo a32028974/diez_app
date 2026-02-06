@@ -1,18 +1,19 @@
 /* ==========================
-   DIEZ DE - app.js (FINAL + MERGE)
-   - Tu flujo original intacto (ocultar/mostrar + timer + terminar + repetir + wakeLock)
-   - PIN Adulto + 1 adulta por ronda
-   - Música: playlist continua en /musica + fade + ON/OFF + volumen slider + recuerda estado
+   DIEZ DE - app.js (FAMILIAR)
+   - Sin modo adulto: sin PIN, sin botón, sin 1-adulta-por-ronda
+   - UI: Iniciar arriba; Repetir/Sugerir/Terminar fuera del cuadro de consignas
+   - Música: playlist /musica + fade + ON/OFF (recuerda estado)
+   - Volumen: SIEMPRE arranca 15% (no recuerda vol)
    - Fullscreen opcional
-   - Sugerencias + aprobadas por JSONP (sin CORS)
-   - Banner "Hay actualización disponible" (SW)
+   - Sugerencias por JSONP (sin CORS)
+   - Banner actualización (SW)
+   - WakeLock
 ========================== */
 
 // ====== CONFIG ======
 const TIEMPO_ESCRITURA = 70;
 const PAUSA_LECTURA_MS = 650;
 const PAUSA_REPASO_MS = 500;
-const ADULTO_PIN = "1971";
 
 // ✅ PEGÁ TU WEBAPP /exec AQUÍ
 const SUGERENCIAS_API_URL = "https://script.google.com/macros/s/AKfycbw_PA0H-NzujxdJwRvykqc_IAlBPLW0lhne0zpgFOTGUn1Fw-G1UYRJ0m4QsSYZQzhEfQ/exec";
@@ -25,22 +26,21 @@ const PLAYLIST = [
   "musica/track4.mp3",
 ];
 
-// Música: default 15%
+// Música: recuerda ON/OFF, pero VOL SIEMPRE 15%
 const MUSIC_ON_KEY = "diezde_musica";
-const MUSIC_VOL_KEY = "diezde_musica_vol";
 const DEFAULT_MUSIC_VOL = 0.15;
 
 // ====== DATA base (consignas.js) ======
 let CONSIGNAS_GENERALES = Array.isArray(window.CONSIGNAS_GENERALES) ? window.CONSIGNAS_GENERALES : [];
-let CONSIGNAS_ADULTO = Array.isArray(window.CONSIGNAS_ADULTO) ? window.CONSIGNAS_ADULTO : [];
 
 // ====== UI ======
 const btnIniciar = document.getElementById("btnIniciar");
 const btnRepetir = document.getElementById("btnRepetir");
 const btnTerminar = document.getElementById("btnTerminar");
 const btnFullscreen = document.getElementById("btnFullscreen");
-const btnAdulto = document.getElementById("btnAdulto");
 const btnMusica = document.getElementById("btnMusica");
+const btnPrevTrack = document.getElementById("btnPrevTrack");
+const btnNextTrack = document.getElementById("btnNextTrack");
 
 const estado = document.getElementById("estado");
 const timerEl = document.getElementById("timer");
@@ -50,11 +50,11 @@ const listaEl = document.getElementById("listaConsignas");
 
 const musicaFondo = document.getElementById("musicaFondo");
 
-// ✅ Slider volumen (si existe)
+// Slider volumen
 const musicVolume = document.getElementById("musicVolume");
 const musicVolumeLabel = document.getElementById("musicVolumeLabel");
 
-// ✅ Update banner (si existe)
+// Update banner (SW)
 const updateBanner = document.getElementById("updateBanner");
 const btnUpdateNow = document.getElementById("btnUpdateNow");
 
@@ -73,9 +73,7 @@ let ultimaRondaIDs = [];
 let timerId = null;
 let wakeLock = null;
 
-let modoAdultoActivo = false;
 let musicaActiva = false;
-
 let fadeInterval = null;
 
 // Playlist state
@@ -142,7 +140,7 @@ function liberarWakeLock(){
   }catch(e){}
 }
 
-// ====== Fullscreen (opcional) ======
+// ====== Fullscreen ======
 async function toggleFullscreen(){
   try{
     if(!document.fullscreenElement){
@@ -155,10 +153,7 @@ async function toggleFullscreen(){
 function setBtnFullscreenUI(){
   if(!btnFullscreen) return;
   const enFS = !!document.fullscreenElement;
-  btnFullscreen.innerHTML = `
-    <span class="fs-ico" aria-hidden="true">⤢</span>
-    ${enFS ? "Salir Fullscreen" : "Fullscreen"}
-  `;
+  btnFullscreen.textContent = enFS ? "Salir Fullscreen" : "Fullscreen";
 }
 
 // ====== Música (playlist) + fade + recuerda estado + volumen ======
@@ -168,24 +163,42 @@ function setBtnMusicaUI(){
   btnMusica.textContent = musicaActiva ? "🔊 Música" : "🎵 Música";
 }
 
-function getSavedMusicVol(){
-  const v = Number(localStorage.getItem(MUSIC_VOL_KEY));
-  return Number.isFinite(v) ? clamp(v, 0, 1) : DEFAULT_MUSIC_VOL;
-}
-
 function setMusicVol(vol){
   const v = clamp(vol, 0, 1);
   if(musicaFondo) musicaFondo.volume = v;
-  localStorage.setItem(MUSIC_VOL_KEY, String(v));
 
   if(musicVolume) musicVolume.value = String(Math.round(v * 100));
   if(musicVolumeLabel) musicVolumeLabel.textContent = `${Math.round(v * 100)}%`;
+}
+
+function getUIVol(){
+  const v = Number(musicVolume?.value ?? 15) / 100;
+  return clamp(v, 0, 1);
 }
 
 function setTrack(i){
   if(!musicaFondo) return;
   playlistIndex = (i + PLAYLIST.length) % PLAYLIST.length;
   musicaFondo.src = PLAYLIST[playlistIndex];
+}
+function nextTrack(){
+  if(!musicaFondo) return;
+  setTrack(playlistIndex + 1);
+  if(musicaActiva) playMusica();
+}
+
+function prevTrack(){
+  if(!musicaFondo) return;
+
+  try{
+    if(!musicaFondo.paused && musicaFondo.currentTime > 2){
+      musicaFondo.currentTime = 0;
+      return;
+    }
+  }catch(e){}
+
+  setTrack(playlistIndex - 1);
+  if(musicaActiva) playMusica();
 }
 
 function fadeTo(target, ms = 350){
@@ -212,16 +225,13 @@ function fadeTo(target, ms = 350){
 
 function playMusica(){
   if(!musicaFondo) return;
-
-  // Política móvil: necesita gesto del usuario
   if(!userGestureUnlocked) return;
 
-  // si no hay src, carga track actual
   if(!musicaFondo.src) setTrack(playlistIndex);
 
   musicaFondo.volume = 0;
   musicaFondo.play().catch(()=>{});
-  fadeTo(getSavedMusicVol(), 450);
+  fadeTo(getUIVol(), 450);
 }
 
 function pauseMusica(){
@@ -241,15 +251,12 @@ function restoreMusicaPref(){
   musicaActiva = localStorage.getItem(MUSIC_ON_KEY) === "1";
   setBtnMusicaUI();
 
-  // Volumen default 15%
-  setMusicVol(getSavedMusicVol());
+  setMusicVol(DEFAULT_MUSIC_VOL);
 
-  // Preparar playlist
   if(musicaFondo){
     setTrack(playlistIndex);
-
-    // Playlist continua
     musicaFondo.loop = false;
+
     musicaFondo.addEventListener("ended", ()=>{
       setTrack(playlistIndex + 1);
       if(musicaActiva) playMusica();
@@ -257,58 +264,24 @@ function restoreMusicaPref(){
   }
 }
 
-// ====== Modo Adulto con PIN ======
-function setAdultoUI(){
-  if(!btnAdulto) return;
-  btnAdulto.setAttribute("aria-pressed", modoAdultoActivo ? "true" : "false");
-  btnAdulto.textContent = modoAdultoActivo ? "🔥 Adulto" : "🔒 Adulto";
-}
-function pedirPINyToggleAdulto(){
-  const pin = prompt("Ingresá PIN para Modo Adulto:");
-  if(pin === null) return;
-
-  if(pin.trim() === ADULTO_PIN){
-    modoAdultoActivo = !modoAdultoActivo;
-    setAdultoUI();
-    if(estado){
-      estado.textContent = modoAdultoActivo
-        ? "Modo Adulto ACTIVADO (1 por ronda)"
-        : "Modo Adulto DESACTIVADO";
-    }
-  }else{
-    if(estado) estado.textContent = "PIN incorrecto ❌";
-  }
-}
-
-// ====== Selección ronda ======
-function normalizarLista(base, categoria){
+// ====== Selección ronda (SIEMPRE 10 generales) ======
+function normalizarLista(base){
   return (Array.isArray(base)? base : [])
     .map(x => ({
       id: Number(x.id),
       texto: limpiarTexto(x.texto),
-      categoria
+      categoria: (x.categoria ? String(x.categoria) : "GENERAL")
     }))
     .filter(x => x.id && x.texto.length > 0);
 }
 
 function seleccionarRonda(){
-  const generales = normalizarLista(CONSIGNAS_GENERALES, "GENERAL");
-  const adultas = normalizarLista(CONSIGNAS_ADULTO, "ADULTO");
+  const generales = normalizarLista(CONSIGNAS_GENERALES);
 
-  const cantGeneral = modoAdultoActivo ? 9 : 10;
-  const cantAdulto = modoAdultoActivo ? 1 : 0;
+  let pool = generales.filter(c => !ultimaRondaIDs.includes(c.id));
+  if(pool.length < 10) pool = generales;
 
-  let poolGeneral = generales.filter(c => !ultimaRondaIDs.includes(c.id));
-  if(poolGeneral.length < cantGeneral) poolGeneral = generales;
-
-  let seleccion = shuffle(poolGeneral).slice(0, cantGeneral);
-
-  if(cantAdulto === 1 && adultas.length > 0){
-    const una = shuffle(adultas).slice(0,1);
-    seleccion = [...seleccion, ...una];
-  }
-
-  seleccion = shuffle(seleccion);
+  const seleccion = shuffle(pool).slice(0, 10);
   ultimaRondaIDs = seleccion.map(c => c.id);
   return seleccion;
 }
@@ -336,14 +309,13 @@ function iniciarTimer(){
   }, 1000);
 }
 
-// ====== Flujo (TU LÓGICA INTACTA) ======
+// ====== Flujo ======
 async function iniciarRonda(){
   if(!Array.isArray(CONSIGNAS_GENERALES) || CONSIGNAS_GENERALES.length < 10){
-    if(estado) estado.textContent = "Faltan consignas generales (revisá consignas.js)";
+    if(estado) estado.textContent = "Faltan consignas (revisá consignas.js)";
     return;
   }
 
-  // desbloqueo de audio por gesto
   userGestureUnlocked = true;
 
   cancelarVoz();
@@ -356,8 +328,8 @@ async function iniciarRonda(){
 
   show(vistaLectura);
   hide(vistaRespuesta);
-  show(timerEl);
-  hide(btnTerminar);
+
+  show(btnTerminar);
 
   if(estado) estado.textContent = "Escuchá…";
 
@@ -374,7 +346,7 @@ async function iniciarRonda(){
 
   hide(vistaLectura);
   show(vistaRespuesta);
-  show(btnTerminar);
+
   if(estado) estado.textContent = "¡A escribir de memoria!";
   iniciarTimer();
 }
@@ -403,7 +375,7 @@ async function repetirConsignas(){
 
   await hablar("Repasamos");
   for(const c of ronda){
-    await hablar(c.texto); // ✅ sin números (como querías)
+    await hablar(c.texto);
     await sleep(PAUSA_REPASO_MS);
   }
 }
@@ -449,10 +421,7 @@ function abrirSugerencias(){
   show(modalSugerencia);
   setTimeout(()=>{ try{ inputSugerencia?.focus(); }catch(e){} }, 50);
 }
-
-function cerrarSugerencias(){
-  hide(modalSugerencia);
-}
+function cerrarSugerencias(){ hide(modalSugerencia); }
 
 function msgSugerencia(texto, tipo=""){
   if(!sugerenciaMsg) return;
@@ -486,7 +455,6 @@ async function enviarSugerencia(){
   try{
     const data = await jsonp(url);
     if(data && data.ok){
-      // ✅ Copy para cualquier usuario (no "te llegó a vos")
       msgSugerencia("¡Gracias por la sugerencia! 🙌 La vamos a revisar.","ok");
       if(inputSugerencia) inputSugerencia.value = "";
     }else{
@@ -497,35 +465,21 @@ async function enviarSugerencia(){
   }
 }
 
-// ====== Cargar aprobadas ======
+// ====== Cargar aprobadas (solo GENERAL) ======
 async function cargarAprobadas(){
   if(!SUGERENCIAS_API_URL || SUGERENCIAS_API_URL.includes("PEGAR_ACA")) return;
 
   try{
     const urlG = `${SUGERENCIAS_API_URL}?action=aprobadas&cat=GENERAL`;
-    const urlA = `${SUGERENCIAS_API_URL}?action=aprobadas&cat=ADULTO`;
+    const g = await jsonp(urlG).catch(()=>[]);
 
-    const [g,a] = await Promise.all([
-      jsonp(urlG).catch(()=>[]),
-      jsonp(urlA).catch(()=>[])
-    ]);
-
-    // merge sin duplicar
     const baseG = new Map((CONSIGNAS_GENERALES||[]).map(x => [Number(x.id), x]));
     (Array.isArray(g)?g:[]).forEach(x=>{
       const id = Number(x.id);
       const texto = limpiarTexto(x.texto);
-      if(id && texto && !baseG.has(id)) baseG.set(id, {id, texto});
+      if(id && texto && !baseG.has(id)) baseG.set(id, {id, texto, categoria:"GENERAL"});
     });
     CONSIGNAS_GENERALES = Array.from(baseG.values());
-
-    const baseA = new Map((CONSIGNAS_ADULTO||[]).map(x => [Number(x.id), x]));
-    (Array.isArray(a)?a:[]).forEach(x=>{
-      const id = Number(x.id);
-      const texto = limpiarTexto(x.texto);
-      if(id && texto && !baseA.has(id)) baseA.set(id, {id, texto});
-    });
-    CONSIGNAS_ADULTO = Array.from(baseA.values());
 
   }catch(e){}
 }
@@ -574,14 +528,14 @@ function initServiceWorker(){
 // ====== INIT ======
 (function init(){
   if(timerEl) timerEl.textContent = TIEMPO_ESCRITURA;
-  setAdultoUI();
+
   setBtnFullscreenUI();
   restoreMusicaPref();
   setBtnMusicaUI();
 
-  // slider volumen (si existe)
+  // volumen: siempre 15 al cargar, pero el usuario puede moverlo
   if(musicVolume){
-    musicVolume.value = String(Math.round(getSavedMusicVol() * 100));
+    musicVolume.value = String(Math.round(DEFAULT_MUSIC_VOL * 100));
     if(musicVolumeLabel) musicVolumeLabel.textContent = `${musicVolume.value}%`;
 
     musicVolume.addEventListener("input", ()=>{
@@ -590,10 +544,8 @@ function initServiceWorker(){
     });
   }
 
-  // carga aprobadas al entrar
   cargarAprobadas();
 
-  // modal: cerrar tocando el fondo
   modalSugerencia?.addEventListener("click", (ev)=>{
     if(ev.target === modalSugerencia) cerrarSugerencias();
   });
@@ -606,18 +558,14 @@ btnIniciar?.addEventListener("click", iniciarRonda);
 btnRepetir?.addEventListener("click", repetirConsignas);
 btnTerminar?.addEventListener("click", terminarRonda);
 
-btnAdulto?.addEventListener("click", pedirPINyToggleAdulto);
-
 btnFullscreen?.addEventListener("click", toggleFullscreen);
 document.addEventListener("fullscreenchange", setBtnFullscreenUI);
 
 btnMusica?.addEventListener("click", ()=>{
-  // desbloquea audio en celu
   userGestureUnlocked = true;
   toggleMusica();
 });
 
-// si el usuario dejó música ON, se intenta activar al primer toque
 document.addEventListener("click", ()=>{
   userGestureUnlocked = true;
   if(musicaActiva && musicaFondo && musicaFondo.paused){
@@ -628,3 +576,39 @@ document.addEventListener("click", ()=>{
 btnSugerirAbrir?.addEventListener("click", abrirSugerencias);
 btnSugerirCerrar?.addEventListener("click", cerrarSugerencias);
 btnEnviarSugerencia?.addEventListener("click", enviarSugerencia);
+
+// 🎵 Anterior / Siguiente canción
+btnNextTrack?.addEventListener("click", ()=>{
+  userGestureUnlocked = true;
+  nextTrack();
+});
+
+btnPrevTrack?.addEventListener("click", ()=>{
+  userGestureUnlocked = true;
+  prevTrack();
+});
+
+// ✅ INSTRUCCIONES (ARREGLADO: esperar DOM listo + no romper si falta algo)
+document.addEventListener("DOMContentLoaded", () => {
+  const btnInstr = document.getElementById("btnInstrucciones");
+  const modalInstr = document.getElementById("modalInstrucciones");
+  const cerrarInstr = document.getElementById("cerrarInstrucciones");
+
+  if(!btnInstr || !modalInstr || !cerrarInstr){
+    console.warn("Instrucciones: faltan elementos en el DOM", { btnInstr, modalInstr, cerrarInstr });
+    return;
+  }
+
+  btnInstr.onclick = () => modalInstr.classList.remove("hidden");
+  cerrarInstr.onclick = () => modalInstr.classList.add("hidden");
+
+  // cerrar tocando afuera (bonus)
+  modalInstr.addEventListener("click", (ev)=>{
+    if(ev.target === modalInstr) modalInstr.classList.add("hidden");
+  });
+
+  // cerrar con ESC (bonus)
+  document.addEventListener("keydown", (ev)=>{
+    if(ev.key === "Escape") modalInstr.classList.add("hidden");
+  });
+});

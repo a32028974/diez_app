@@ -1,22 +1,17 @@
 <!doctype html>
 <html lang="es">
 <head>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Diez De</title>
 
-
- <link rel="stylesheet" href="style.css?v=2026-02-06-2">
-  
-  <!-- ✅ ICONOS / PWA -->
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#20c46b">
+  <link rel="stylesheet" href="style.css?v=2026-02-06-2">
 </head>
 <body>
 
-  <!-- ✅ Banner actualización (aparece solo cuando hay update del SW) -->
+  <!-- Banner actualización (SW) -->
   <div id="updateBanner" class="update-banner hidden">
     <div class="update-left">
       <span class="dot"></span>
@@ -28,98 +23,144 @@
   <div class="wrap">
     <header class="top">
       <div class="brand">
-        <span class="dice">🎲</span>
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 64 64" width="28" height="28">
+            <rect x="10" y="10" width="44" height="44" rx="12" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.14)"/>
+            <rect x="18" y="18" width="28" height="28" rx="9" fill="rgba(32,196,107,.12)" stroke="rgba(32,196,107,.35)"/>
+            <circle cx="26" cy="26" r="2.6" fill="rgba(32,196,107,.95)"/>
+            <circle cx="38" cy="26" r="2.6" fill="rgba(32,196,107,.95)"/>
+            <circle cx="32" cy="32" r="2.6" fill="rgba(32,196,107,.95)"/>
+            <circle cx="26" cy="38" r="2.6" fill="rgba(32,196,107,.95)"/>
+            <circle cx="38" cy="38" r="2.6" fill="rgba(32,196,107,.95)"/>
+          </svg>
+        </span>
         <h1>Diez <span class="de">De</span></h1>
       </div>
 
+      <!-- Toolbar (solo fullscreen) -->
       <div class="toolbar">
-        <button id="btnAdulto" class="btn btn-dark" type="button">🔒 Adulto</button>
-        <button id="btnFullscreen" class="btn btn-dark" type="button">Fullscreen</button>
+  <button id="btnFullscreen" class="btn btn-dark" type="button">Fullscreen</button>
+        <button id="btnInstrucciones">❓ Instrucciones</button>
 
-        <button id="btnMusica" class="btn btn-dark" type="button">🎵 Música</button>
+</div>
 
-        <!-- ✅ Volumen música -->
-        <div class="volbox" title="Volumen música">
-          <span>🔉</span>
-          <input id="musicVolume" type="range" min="0" max="100" value="15" />
-          <span id="musicVolumeLabel">15%</span>
-        </div>
-
-        <button id="btnIniciar" class="btn btn-green" type="button">Iniciar ronda</button>
-      </div>
     </header>
+
+    <!-- Acción principal arriba -->
+    <section class="actionbar">
+      <button id="btnIniciar" class="btn btn-green btn-start" type="button">Iniciar ronda</button>
+    </section>
 
     <section class="panel">
       <div id="estado" class="status">Listos para jugar</div>
 
+      <!-- Controles del juego (afuera de la lista) -->
+      <div class="game-controls">
+        <button id="btnRepetir" class="btn btn-dark btn-sm" type="button">🔁 Repetir</button>
+        <button id="btnSugerirAbrir" class="btn btn-dark btn-sm" type="button">💡 Sugerir</button>
+        <button id="btnTerminar" class="btn btn-dark btn-sm danger hidden" type="button">⛔ Terminar ahora</button>
+      </div>
+
+      <!-- Lista (solo consignas) -->
       <div id="vistaLectura" class="lista hidden">
         <div class="lista-title">
           <div class="pill">Escuchá y mirá 👀 🔊</div>
-
-          <div class="right-actions">
-            <button id="btnRepetir" class="btn btn-dark btn-sm" type="button">🔁 Repetir</button>
-            <button id="btnSugerirAbrir" class="btn btn-dark btn-sm" type="button">💡 Sugerir</button>
-          </div>
         </div>
-
         <ol id="listaConsignas"></ol>
       </div>
 
+      <!-- Timer -->
       <div id="vistaRespuesta" class="respuesta hidden">
         <div class="timer-box">
           <div class="timer-label">Tiempo</div>
-          <div id="timer" class="timer">80</div>
+          <div id="timer" class="timer">70</div>
         </div>
-
-        <button id="btnTerminar" class="btn btn-dark btn-big hidden" type="button">Terminar ahora</button>
       </div>
+<!-- ✅ Barra de Música (abajo) -->
+<div class="musicbar">
+  <button id="btnPrevTrack" class="btn btn-dark btn-sm" type="button">⏮</button>
+
+  <button id="btnMusica" class="btn btn-dark btn-sm" type="button">🎵 Música</button>
+
+  <button id="btnNextTrack" class="btn btn-dark btn-sm" type="button">⏭</button>
+
+  <div class="volbox" title="Volumen música">
+    <span>🔉</span>
+    <input id="musicVolume" type="range" min="0" max="100" value="15" />
+    <span id="musicVolumeLabel">15%</span>
+  </div>
+</div>
 
       <a class="footer-badge" href="https://wa.me/5491136065609" target="_blank" rel="noopener">
-  <span class="badge-dot"></span>
-  <span>FrecWD</span>
-</a>
+        <span class="badge-dot"></span>
+        <span>FrecWD</span>
+      </a>
+    </section>
 
-  <!-- ✅ Audio (música fondo). Se maneja por JS (playlist) -->
-  <audio id="musicaFondo" preload="auto"></audio>
+    <!-- Audio -->
+    <audio id="musicaFondo" preload="auto"></audio>
 
-  <!-- ✅ Modal sugerencias -->
-  <div id="modalSugerencia" class="modal hidden">
-    <div class="modal-card">
-      <div class="modal-head">
-        <div class="modal-title">💡 Sugerir consigna</div>
-        <button id="btnSugerirCerrar" class="btn-x" type="button">×</button>
-      </div>
-
-      <div class="modal-body">
-        <label class="lbl">Consigna</label>
-        <input id="inputSugerencia" class="inp" type="text" placeholder="Ej: Una comida típica" maxlength="80" />
-
-        <label class="lbl">Categoría</label>
-        <select id="selectCategoria" class="inp">
-          <option value="GENERAL">General</option>
-          <option value="COMIDA">Comida</option>
-          <option value="OBJETO">Objeto</option>
-          <option value="LUGAR">Lugar</option>
-          <option value="PERSONAJE">Personaje</option>
-          <option value="OTRO">Otro</option>
-          <option value="ADULTO">Adulto</option>
-        </select>
-
-        <!-- ✅ Copy correcto para cualquier usuario -->
-        <p class="help">
-          ¡Gracias por aportar! 🙌 La consigna queda pendiente de revisión y, si es aprobada, se suma al juego.
-        </p>
-
-        <div class="modal-actions">
-          <button id="btnEnviarSugerencia" class="btn btn-green" type="button">Enviar</button>
+    <!-- Modal sugerencias -->
+    <div id="modalSugerencia" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-head">
+          <div class="modal-title">💡 Sugerir consigna</div>
+          <button id="btnSugerirCerrar" class="btn-x" type="button">×</button>
         </div>
 
-        <div id="sugerenciaMsg" class="msg hidden"></div>
+        <div class="modal-body">
+          <label class="lbl">Consigna</label>
+          <input id="inputSugerencia" class="inp" type="text" placeholder="Ej: Una comida típica" maxlength="80" />
+
+          <label class="lbl">Categoría</label>
+          <select id="selectCategoria" class="inp">
+            <option value="GENERAL">General</option>
+            <option value="COMIDA">Comida</option>
+            <option value="OBJETO">Objeto</option>
+            <option value="LUGAR">Lugar</option>
+            <option value="PERSONAJE">Personaje</option>
+            <option value="OTRO">Otro</option>
+          </select>
+
+          <p class="help">
+            ¡Gracias por aportar! 🙌 La consigna queda pendiente de revisión y, si es aprobada, se suma al juego.
+          </p>
+
+          <div class="modal-actions">
+            <button id="btnEnviarSugerencia" class="btn btn-green" type="button">Enviar</button>
+          </div>
+
+          <div id="sugerenciaMsg" class="msg hidden"></div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script src="consignas.js?v=2026-02-05-2"></script>
-  <script src="app.js?v=2026-02-05-2"></script>
+    <script src="consignas.js?v=2026-02-06-2"></script>
+    <script src="app.js?v=2026-02-06-2"></script>
+  </div>
+  <div id="modalInstrucciones" class="modal hidden">
+  <div class="modal-content">
+    <h2>📋 Cómo jugar</h2>
+
+    <p>
+      Se muestran consignas una por una.<br>
+      Cada jugador debe escribir respuestas antes de que el tiempo termine.
+    </p>
+
+    <p>
+      ⏱️ Cuando termina el tiempo, se muestran todas las consignas para corregir.
+      Todos los jugadores tienen que decir: número y que pusieron.
+      Cada respuesta correcta +1 cada respuesta incorrecta -1 si no completaron nada - ni suma ni resta.
+    </p>
+
+    <p>
+      🔁 Podés repetir las consignas.<br>
+      📱 El modo pantalla completa mejora la experiencia.
+    </p>
+
+    <button id="cerrarInstrucciones">Cerrar</button>
+  </div>
+</div>
+
 </body>
 </html>

@@ -1,4 +1,4 @@
-const VERSION = "2026-02-06-2"; // 👈 subí versión (cambiala cada vez que actualices)
+const VERSION = "2026-02-06-1";
 const CACHE_NAME = `diezde-${VERSION}`;
 
 const APP_SHELL = [
@@ -7,10 +7,6 @@ const APP_SHELL = [
   "./style.css",
   "./app.js",
   "./consignas.js",
-  "./manifest.json",
-  "./favicon-32.png",
-  "./icon-192.png",
-  "./icon-512.png",
   "./sw.js",
 ];
 
@@ -24,8 +20,11 @@ const OPTIONAL_ASSETS = [
 self.addEventListener("install", (event) => {
   event.waitUntil((async ()=>{
     const cache = await caches.open(CACHE_NAME);
+
+    // ✅ Shell obligatorio
     await cache.addAll(APP_SHELL);
 
+    // ✅ Opcionales (no rompen si faltan)
     for (const url of OPTIONAL_ASSETS) {
       try { await cache.add(url); } catch (e) {}
     }
@@ -55,16 +54,19 @@ self.addEventListener("fetch", (event) => {
 
   const accept = req.headers.get("accept") || "";
 
+  // HTML: network-first para detectar updates
   if (accept.includes("text/html") || url.pathname.endsWith(".html") || url.pathname === "/") {
     event.respondWith(networkFirst(req));
     return;
   }
 
-  if (url.pathname.endsWith(".js") || url.pathname.endsWith(".css") || url.pathname.endsWith(".json")) {
+  // JS/CSS: stale-while-revalidate
+  if (url.pathname.endsWith(".js") || url.pathname.endsWith(".css")) {
     event.respondWith(staleWhileRevalidate(req));
     return;
   }
 
+  // resto: cache-first
   event.respondWith(cacheFirst(req));
 });
 

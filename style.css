@@ -8,6 +8,7 @@
   --green2:#17a456;
   --shadow: 0 18px 50px rgba(0,0,0,.45);
   --radius:18px;
+  --danger:#ff5b5b;
 }
 
 *{box-sizing:border-box}
@@ -38,7 +39,7 @@ body{
 .brand{display:flex;align-items:center;gap:10px;}
 .brand h1{margin:0;font-size:34px;letter-spacing:.5px;}
 .brand .de{opacity:.9;font-weight:800;}
-.dice{font-size:28px; filter: drop-shadow(0 10px 22px rgba(0,0,0,.4));}
+.logo{filter: drop-shadow(0 10px 22px rgba(0,0,0,.4)); display:inline-flex;}
 
 .toolbar{
   display:flex;
@@ -69,8 +70,20 @@ body{
   font-weight: 900;
 }
 
-.btn-big{width:100%; padding:14px 16px; font-size:18px;}
 .btn-sm{padding:8px 10px; border-radius:12px; font-size: 13px;}
+.btn-start{width: min(340px, 100%); font-size:16px; padding:13px 16px;}
+
+.danger{
+  border-color: rgba(255,91,91,.35);
+  background: rgba(255,91,91,.10);
+}
+.danger:hover{background: rgba(255,91,91,.14);}
+
+.actionbar{
+  margin-top: 10px;
+  display:flex;
+  justify-content:flex-end;
+}
 
 .panel{
   margin-top: 14px;
@@ -90,6 +103,14 @@ body{
   color: var(--muted);
 }
 
+.game-controls{
+  margin-top: 12px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
 .lista{
   margin-top: 12px;
   border-radius: 16px;
@@ -101,12 +122,10 @@ body{
 .lista-title{
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-start;
   gap:10px;
   margin-bottom: 10px;
 }
-
-.right-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
 
 .pill{
   display:inline-flex;
@@ -145,6 +164,8 @@ ol li{margin:8px 0; color:#d8e8f2; line-height:1.25;}
   align-items:center;
   justify-content:center;
   opacity:.9;
+  text-decoration:none;
+  color: inherit;
 }
 .badge-dot{
   width:12px; height:12px; border-radius:50%;
@@ -267,4 +288,53 @@ ol li{margin:8px 0; color:#d8e8f2; line-height:1.25;}
 @media (max-width: 520px){
   .brand h1{font-size: 28px;}
   .volbox input[type="range"]{width: 110px;}
+  .actionbar{justify-content:stretch;}
+  .btn-start{width:100%;}
+  .game-controls{justify-content:stretch;}
+}
+/* ✅ Musicbar abajo */
+.musicbar{
+  margin-top: 12px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border:1px solid var(--line);
+  background: rgba(0,0,0,.14);
+}
+
+.musicbar .volbox{
+  margin-left: 6px;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-content {
+  background: #111;
+  color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+}
+
+.hidden {
+  display: none;
+}
+
+#btnInstrucciones {
+  font-size: 14px;
+  padding: 6px 10px;
 }
