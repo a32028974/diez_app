@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Diez De</title>
+
+  <link rel="stylesheet" href="style.css?v=2026-02-05-2">
+</head>
+<body>
+
+  <!-- ✅ Banner actualización (aparece solo cuando hay update del SW) -->
+  <div id="updateBanner" class="update-banner hidden">
+    <div class="update-left">
+      <span class="dot"></span>
+      <span>Hay una actualización disponible.</span>
+    </div>
+    <button id="btnUpdateNow" class="btn btn-green" type="button">Actualizar</button>
+  </div>
+
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <span class="dice">🎲</span>
+        <h1>Diez <span class="de">De</span></h1>
+      </div>
+
+      <div class="toolbar">
+        <button id="btnAdulto" class="btn btn-dark" type="button">🔒 Adulto</button>
+        <button id="btnFullscreen" class="btn btn-dark" type="button">Fullscreen</button>
+
+        <button id="btnMusica" class="btn btn-dark" type="button">🎵 Música</button>
+
+        <!-- ✅ Volumen música -->
+        <div class="volbox" title="Volumen música">
+          <span>🔉</span>
+          <input id="musicVolume" type="range" min="0" max="100" value="15" />
+          <span id="musicVolumeLabel">15%</span>
+        </div>
+
+        <button id="btnIniciar" class="btn btn-green" type="button">Iniciar ronda</button>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div id="estado" class="status">Listos para jugar</div>
+
+      <div id="vistaLectura" class="lista hidden">
+        <div class="lista-title">
+          <div class="pill">Escuchá y mirá 👀 🔊</div>
+
+          <div class="right-actions">
+            <button id="btnRepetir" class="btn btn-dark btn-sm" type="button">🔁 Repetir</button>
+            <button id="btnSugerirAbrir" class="btn btn-dark btn-sm" type="button">💡 Sugerir</button>
+          </div>
+        </div>
+
+        <ol id="listaConsignas"></ol>
+      </div>
+
+      <div id="vistaRespuesta" class="respuesta hidden">
+        <div class="timer-box">
+          <div class="timer-label">Tiempo</div>
+          <div id="timer" class="timer">80</div>
+        </div>
+
+        <button id="btnTerminar" class="btn btn-dark btn-big hidden" type="button">Terminar ahora</button>
+      </div>
+
+      <a class="footer-badge" href="https://wa.me/5491136065609" target="_blank" rel="noopener">
+  <span class="badge-dot"></span>
+  <span>FrecWD</span>
+</a>
+
+  <!-- ✅ Audio (música fondo). Se maneja por JS (playlist) -->
+  <audio id="musicaFondo" preload="auto"></audio>
+
+  <!-- ✅ Modal sugerencias -->
+  <div id="modalSugerencia" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div class="modal-title">💡 Sugerir consigna</div>
+        <button id="btnSugerirCerrar" class="btn-x" type="button">×</button>
+      </div>
+
+      <div class="modal-body">
+        <label class="lbl">Consigna</label>
+        <input id="inputSugerencia" class="inp" type="text" placeholder="Ej: Una comida típica" maxlength="80" />
+
+        <label class="lbl">Categoría</label>
+        <select id="selectCategoria" class="inp">
+          <option value="GENERAL">General</option>
+          <option value="COMIDA">Comida</option>
+          <option value="OBJETO">Objeto</option>
+          <option value="LUGAR">Lugar</option>
+          <option value="PERSONAJE">Personaje</option>
+          <option value="OTRO">Otro</option>
+          <option value="ADULTO">Adulto</option>
+        </select>
+
+        <!-- ✅ Copy correcto para cualquier usuario -->
+        <p class="help">
+          ¡Gracias por aportar! 🙌 La consigna queda pendiente de revisión y, si es aprobada, se suma al juego.
+        </p>
+
+        <div class="modal-actions">
+          <button id="btnEnviarSugerencia" class="btn btn-green" type="button">Enviar</button>
+        </div>
+
+        <div id="sugerenciaMsg" class="msg hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="consignas.js?v=2026-02-05-2"></script>
+  <script src="app.js?v=2026-02-05-2"></script>
+</body>
+</html>
