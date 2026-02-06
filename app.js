@@ -9,6 +9,12 @@
    - Banner actualización (SW)
    - WakeLock
 ========================== */
+function isStandalone(){
+  const dm = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
+  const ios = window.navigator.standalone === true; // iOS
+  return dm || ios;
+}
+
 if (typeof gtag === "function") {
   gtag('event', 'open_app', {
     installed: isStandalone() ? 'yes' : 'no'
